@@ -19,7 +19,7 @@ import $ from "jquery";
 import { getUrlPrefix } from "jsx/mixin";
 
 // interval to use for polling entity lists
-const POLLING_INTERVAL = 2000;
+const POLLING_INTERVAL = 300000;  // in ms
 
 // use reaper server url for ajax calls if running on dev server (will be run in iframe)
 const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
