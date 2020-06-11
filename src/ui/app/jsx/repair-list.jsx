@@ -284,7 +284,7 @@ const repairList = React.createClass({
   },
 
   componentDidMount: function() {
-   var intervalId = setInterval(this._handleTimer, 2000);
+   var intervalId = setInterval(this._handleTimer, 300000);  // every 5 mins
   },
 
   componentWillUnmount: function() {
