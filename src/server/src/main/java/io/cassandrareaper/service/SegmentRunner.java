@@ -366,13 +366,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try {
       final long startTime = System.currentTimeMillis();
       final long maxTime = startTime + timeoutMillis;
-      final long waitTime = Math.min(timeoutMillis, 60000);
+      final long waitTime = Math.min(timeoutMillis, 20000);
       long lastLoopTime = startTime;
 
       while (System.currentTimeMillis() < maxTime) {
         condition.await(waitTime, TimeUnit.MILLISECONDS);
 
-        boolean isDoneOrTimedOut = lastLoopTime + 60_000 > System.currentTimeMillis();
+        boolean isDoneOrTimedOut = lastLoopTime + waitTime > System.currentTimeMillis();
 
         isDoneOrTimedOut |= RepairSegment.State.DONE == context.storage
             .getRepairSegment(segment.getRunId(), segmentId).get().getState();
