@@ -366,13 +366,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try {
       final long startTime = System.currentTimeMillis();
       final long maxTime = startTime + timeoutMillis;
-      final long waitTime = Math.min(timeoutMillis, 60000);
+      final long waitTime = Math.min(timeoutMillis, 20000);
       long lastLoopTime = startTime;
 
       while (System.currentTimeMillis() < maxTime) {
         condition.await(waitTime, TimeUnit.MILLISECONDS);
 
-        boolean isDoneOrTimedOut = lastLoopTime + 60_000 > System.currentTimeMillis();
+        boolean isDoneOrTimedOut = lastLoopTime + waitTime > System.currentTimeMillis();
 
         isDoneOrTimedOut |= RepairSegment.State.DONE == context.storage
             .getRepairSegment(segment.getRunId(), segmentId).get().getState();
@@ -483,7 +483,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         declineRun();
         return false;
       }
-      if (isRepairRunningOnOneNode(segment)) {
+      if (isRepairRunningOnOneNode(segment, keyspace, coordinator)) {
         declineRun();
         return false;
       }
@@ -676,13 +676,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return result;
   }
 
-  private boolean isRepairRunningOnOneNode(RepairSegment segment) {
-    for (RepairSegment segmentInRun : context.storage.getRepairSegmentsForRun(segment.getRunId())) {
+  private boolean isRepairRunningOnOneNode(RepairSegment segment, String keyspace, JmxProxy coordinator) {
+    // We want to see if any nodes that are part of our target
+    // segment are running any existing repairs, if they are, we
+    // can't schedule this segment right now
+    Collection<String> nodes = coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
+    for (String node : nodes) {
       try {
         JmxProxy hostProxy = context.jmxConnectionFactory.connect(
                 Node.builder()
                     .withCluster(context.storage.getCluster(clusterName).get())
-                    .withHostname(segmentInRun.getCoordinatorHost())
+                    .withHostname(node)
                     .build(),
                 context.config.getJmxConnectionTimeoutInSeconds());
         if (hostProxy.isRepairRunning()) {
