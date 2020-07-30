@@ -544,11 +544,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
               String msg = "Postponed due to affected hosts already doing repairs";
               repairRunner.updateLastEvent(msg);
-              handlePotentialStuckRepairs(busyHosts, metrics.getNode());
               return false;
             }
           }
-        } catch (InterruptedException | ExecutionException | ConcurrentException e) {
+        } catch (InterruptedException | ExecutionException e) {
           LOG.warn("Failed grabbing metrics from at least one node. Cannot repair segment :'(", e);
           allLocalDcHosts = false;
           allHosts = false;
