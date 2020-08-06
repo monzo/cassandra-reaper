@@ -910,6 +910,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           jmxProxy.removeRepairStatusHandler(repairNumber);
         }
         break;
+      case PROGRESS:
+        LOG.trace(
+            "Got progress {} for segment with id '{}' and repair number '{}'",
+            progress.get(),
+            segmentId,
+            repairNumber);
+        break;
       default:
         LOG.debug(
             "Unidentified progressStatus {} for segment with id '{}' and repair number '{}'",
