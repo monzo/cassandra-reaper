@@ -373,7 +373,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       long lastLoopTime = startTime;
 
       // We want to keep going whilst we are making progress towards our repairs
-      while (lastRepairEventMillis + timeoutMillis < System.currentTimeMillis()) {
+      while (System.currentTimeMillis() < (lastRepairEventMillis + timeoutMillis)) {
         condition.await(waitTime, TimeUnit.MILLISECONDS);
 
         boolean isDoneOrTimedOut = lastLoopTime + waitTime > System.currentTimeMillis();
