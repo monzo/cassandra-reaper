@@ -414,15 +414,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
         SEGMENT_RUNNERS.remove(resultingSegment.getId());
       } else {
-        // Something went wrong on the coordinator node and we never got the RUNNING notification
-        // or we are in an undetermined state.
-        // Let's just abort and reschedule the segment.
+        // This repair did not start, something went wrong on the coordinator node when starting
+        // and we never got the RUNNING notification or we are in an undetermined state.
+        // We are not going to abort because that'll disrupt any other repairs running.
         LOG.info(
             "Repair command {} on segment {} never managed to start within timeout.",
             this.repairNo,
             segmentId);
         segmentFailed.set(true);
-        abort(resultingSegment, coordinator);
       }
       // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
       renewLead();
