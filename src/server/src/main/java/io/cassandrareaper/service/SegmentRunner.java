@@ -105,6 +105,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final AtomicBoolean successOrFailedNotified = new AtomicBoolean(false);
   private final AtomicBoolean completeNotified = new AtomicBoolean(false);
 
+  // Local runner keeping track of when it last saw progress
+  private long lastRepairEventMillis;
 
   SegmentRunner(
       AppContext context,
@@ -134,6 +136,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
     this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
+    this.lastRepairEventMillis = System.currentTimeMillis();
   }
 
   @Override
@@ -365,11 +368,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     try {
       final long startTime = System.currentTimeMillis();
-      final long maxTime = startTime + timeoutMillis;
+      lastRepairEventMillis = startTime;
       final long waitTime = Math.min(timeoutMillis, 20000);
       long lastLoopTime = startTime;
 
-      while (System.currentTimeMillis() < maxTime) {
+      // We want to keep going whilst we are making progress towards our repairs
+      while (lastRepairEventMillis + timeoutMillis < System.currentTimeMillis()) {
         condition.await(waitTime, TimeUnit.MILLISECONDS);
 
         boolean isDoneOrTimedOut = lastLoopTime + waitTime > System.currentTimeMillis();
@@ -750,6 +754,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         "Handler for command id %s not handling message with number %s", this.repairNo, repairNo);
 
     boolean failOutsideSynchronizedBlock = false;
+    lastRepairEventMillis = System.currentTimeMillis();
+
     // DO NOT ADD EXTERNAL CALLS INSIDE THIS SYNCHRONIZED BLOCK (JMX PROXY ETC)
     synchronized (condition) {
       RepairSegment currentSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
