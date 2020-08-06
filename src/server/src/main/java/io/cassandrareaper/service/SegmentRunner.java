@@ -370,22 +370,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       final long startTime = System.currentTimeMillis();
       lastRepairEventMillis = startTime;
       final long waitTime = Math.min(timeoutMillis, 20000);
-      long lastLoopTime = startTime;
 
       // We want to keep going whilst we are making progress towards our repairs
       while (System.currentTimeMillis() < (lastRepairEventMillis + timeoutMillis)) {
-        condition.await(waitTime, TimeUnit.MILLISECONDS);
+        boolean isDoneOrFailed = condition.await(waitTime, TimeUnit.MILLISECONDS);
+        isDoneOrFailed |= RepairSegment.State.DONE == context.storage
+                .getRepairSegment(segment.getRunId(), segmentId).get().getState();
 
-        boolean isDoneOrTimedOut = lastLoopTime + waitTime > System.currentTimeMillis();
-
-        isDoneOrTimedOut |= RepairSegment.State.DONE == context.storage
-            .getRepairSegment(segment.getRunId(), segmentId).get().getState();
-
-        if (isDoneOrTimedOut) {
+        if (isDoneOrFailed) {
           break;
         }
         renewLead();
-        lastLoopTime = System.currentTimeMillis();
       }
     } catch (InterruptedException e) {
       LOG.warn("Repair command {} on segment {} interrupted", this.repairNo, segmentId, e);
