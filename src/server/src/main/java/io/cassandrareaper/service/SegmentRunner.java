@@ -370,22 +370,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       final long startTime = System.currentTimeMillis();
       lastRepairEventMillis = startTime;
       final long waitTime = Math.min(timeoutMillis, 20000);
-      long lastLoopTime = startTime;
 
       // We want to keep going whilst we are making progress towards our repairs
       while (System.currentTimeMillis() < (lastRepairEventMillis + timeoutMillis)) {
-        condition.await(waitTime, TimeUnit.MILLISECONDS);
+        boolean isDoneOrFailed = condition.await(waitTime, TimeUnit.MILLISECONDS);
+        isDoneOrFailed |= RepairSegment.State.DONE == context.storage
+                .getRepairSegment(segment.getRunId(), segmentId).get().getState();
 
-        boolean isDoneOrTimedOut = lastLoopTime + waitTime > System.currentTimeMillis();
-
-        isDoneOrTimedOut |= RepairSegment.State.DONE == context.storage
-            .getRepairSegment(segment.getRunId(), segmentId).get().getState();
-
-        if (isDoneOrTimedOut) {
+        if (isDoneOrFailed) {
           break;
         }
         renewLead();
-        lastLoopTime = System.currentTimeMillis();
       }
     } catch (InterruptedException e) {
       LOG.warn("Repair command {} on segment {} interrupted", this.repairNo, segmentId, e);
@@ -414,15 +409,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
         SEGMENT_RUNNERS.remove(resultingSegment.getId());
       } else {
-        // Something went wrong on the coordinator node and we never got the RUNNING notification
-        // or we are in an undetermined state.
-        // Let's just abort and reschedule the segment.
+        // This repair did not start, something went wrong on the coordinator node when starting
+        // and we never got the RUNNING notification or we are in an undetermined state.
+        // We are not going to abort because that'll disrupt any other repairs running.
         LOG.info(
             "Repair command {} on segment {} never managed to start within timeout.",
             this.repairNo,
             segmentId);
         segmentFailed.set(true);
-        abort(resultingSegment, coordinator);
       }
       // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
       renewLead();
