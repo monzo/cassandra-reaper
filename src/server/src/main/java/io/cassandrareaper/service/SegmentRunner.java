@@ -83,7 +83,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final Pattern REPAIR_UUID_PATTERN
       = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
-  private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 10000;
+  private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 2000;
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
   private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(10);
   private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);

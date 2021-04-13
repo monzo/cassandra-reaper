@@ -486,7 +486,7 @@ final class RepairRunner implements Runnable {
       }
     } else {
       // Add random sleep time to avoid one Reaper instance locking all others during multi DC incremental repairs
-      Thread.sleep(ThreadLocalRandom.current().nextInt(0, 10 + 1) * 1000);
+      // Thread.sleep(ThreadLocalRandom.current().nextInt(0, 10 + 1) * 1000);
       potentialCoordinators
           = Arrays.asList(context.storage.getRepairSegment(repairRunId, segmentId).get().getCoordinatorHost());
     }
